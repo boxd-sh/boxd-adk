@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "boxd-adk"
+version = "0.1.0"
+description = "Google ADK plugin for boxd: full Linux machines with checkpoints, snapshots and live forks for AI agents."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "Azin" }]
+keywords = ["adk", "google-adk", "agents", "sandbox", "boxd", "microvm", "code-execution"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    # 1.7.0 added plugins; 1.18.0 is the first with everything the README and
+    # examples use (App, `async with InMemoryRunner(app=...)`, run_debug).
+    "google-adk>=1.18.0",
+    # The version the tools (machines.fs, checkpoints, labels and
+    # delete_after on create) were tested against.
+    "boxd>=0.3.0",
+]
+
+[project.urls]
+Homepage = "https://boxd.sh/?ref=boxd-adk"
+Documentation = "https://docs.boxd.sh/?ref=boxd-adk"
+Repository = "https://github.com/boxd-sh/boxd-adk"
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "ruff>=0.6"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["boxd_adk"]
+
+[tool.pytest.ini_options]
+markers = ["live: runs against real boxd (needs BOXD_API_KEY and BOXD_ADK_LIVE=1)"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "RUF"]
