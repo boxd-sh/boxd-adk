@@ -9,7 +9,7 @@ description = "Google ADK plugin for boxd: full Linux machines with checkpoints,
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
-authors = [{ name = "Azin" }]
+authors = [{ name = "boxd", email = "contact@boxd.sh" }]
 keywords = ["adk", "google-adk", "agents", "sandbox", "boxd", "microvm", "code-execution"]
 classifiers = [
     "Development Status :: 4 - Beta",
