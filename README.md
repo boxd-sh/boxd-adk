@@ -1,4 +1,4 @@
-![boxd: composable computers for Google ADK agents](assets/banner.png)
+![boxd: composable computers for Google ADK agents](https://raw.githubusercontent.com/boxd-sh/boxd-adk/main/assets/banner.png)
 
 # boxd-adk
 

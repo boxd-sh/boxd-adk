@@ -31,7 +31,7 @@ Nothing here is published yet.
 4. Set the date in `CHANGELOG.md`. The first release ships `0.1.0` as it stands
    in `pyproject.toml`; bump `version` there for every later release.
 
-5. Before the repo is public, switch the banner at the top of the README to its
+5. The banner at the top of the README to its
    full `raw.githubusercontent.com` URL: PyPI doesn't show relative images.
 
 6. Publish, then tag:
