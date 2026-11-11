@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-11)
 
 - First release: `BoxdPlugin` gives a Google ADK agent a boxd machine through seven tools:
   `execute_command_in_boxd`, `execute_code_in_boxd` (Python, JavaScript, bash),
