@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
 ]
 dependencies = [
     # 1.7.0 added plugins; 1.18.0 is the first with everything the README and
@@ -48,6 +49,8 @@ markers = ["live: runs against real boxd (needs BOXD_API_KEY and BOXD_ADK_LIVE=1
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+# Code blocks in the README keep their aligned comments.
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "RUF"]

@@ -79,9 +79,7 @@ The machine is created lazily on first tool use; constructing the agent needs no
 | `list_boxd_checkpoints` | List checkpoints, newest first |
 | `restore_boxd_checkpoint` | Roll back to a checkpoint (**destructive**, requires `confirm=true`) |
 
-All tools return structured dicts (`success`, `stdout`/`stderr`/`exit_code`, …); failures come back as `{"success": false, "error": ...}` so the agent can adapt instead of crashing the run. A command that runs past its timeout is stopped and reported with `"timed_out": true`.
-
-Commands run as the `boxd` user (with passwordless sudo) in `/home/boxd`. Files are read and written through boxd's filesystem API as that same user, so there is no size limit on writes, and relative paths start in `/home/boxd`. Output and file content returned to the model are capped at 100,000 characters.
+Commands run as the `boxd` user (with passwordless sudo) in `/home/boxd`, and relative paths start there. Every tool returns a dict with `success`; see [Errors](#errors) for what a failure looks like.
 
 ### A note on restore
 
@@ -95,11 +93,11 @@ These are Python methods on the plugin rather than agent tools, because each one
 base = BoxdPlugin()
 # ...set up the project once...
 
-fork = base.fork()            # live copy: disk, memory and running processes
+fork = base.fork()  # live copy: disk, memory and running processes
 other_agent = Agent(model="gemini-flash-latest", name="other", tools=fork.get_tools())
 
-base.save_snapshot("project-base")                      # reusable starting point
-fresh = BoxdPlugin(from_snapshot="project-base")        # new machines start from it
+base.save_snapshot("project-base")  # reusable starting point
+fresh = BoxdPlugin(from_snapshot="project-base")  # new machines start from it
 ```
 
 An unnamed fork is deleted when its plugin is closed. See [`examples/fork_experiments.py`](examples/fork_experiments.py) for two agents working on two forks in parallel.
@@ -125,6 +123,48 @@ BoxdPlugin(
 ```
 
 `plugin.client` is the underlying [boxd SDK](https://pypi.org/project/boxd/) client and `plugin.machine_id` the machine's id, for anything the tools don't cover (exposing a port, egress allowlists, pausing).
+
+## Errors
+
+A tool never raises into the ADK run. A failure comes back to the model as a result it can read and act on:
+
+| What happened | What the tool returns |
+|---|---|
+| The command exited non-zero | `{"success": false, "exit_code": 2, "stdout": ..., "stderr": ...}` |
+| The command ran past its timeout | `{"success": false, "timed_out": true, "error": "command did not finish within 300s and was stopped. ..."}` |
+| boxd rejected the API key | `{"success": false, "error": "boxd rejected the credentials (...). Check BOXD_API_KEY."}` |
+| A file is missing or can't be read | `{"success": false, "error": "..."}` |
+| A required argument is missing | `{"success": false, "error": "path is required"}` |
+| `restore_boxd_checkpoint` without `confirm=true` | `{"success": false, "error": "Restore not performed: ..."}` |
+| A checkpoint failed to save | `{"success": false, "error": "checkpoint 'adk-...' failed"}` |
+
+The plugin also logs every failure, and its `on_tool_error_callback` turns an exception from one of its own tools into the same `{"success": false, "error": ...}` shape.
+
+Two errors come from your own code rather than from a tool:
+
+- `BoxdPlugin()` raises `ValueError` when there is no API key at all (outside a boxd machine) and when you pass both `from_snapshot` and `image`.
+- `fork()` and `save_snapshot()` raise the boxd SDK's errors, and `save_snapshot` raises `RuntimeError` if the snapshot fails and `TimeoutError` if it isn't ready in time (600 seconds by default).
+
+## Limits
+
+| | Limit |
+|---|---|
+| Command timeout | 300 seconds by default; the model can pass a larger `timeout` per call |
+| Output returned to the model | 100,000 characters per stream (`stdout`, `stderr`, file content); the rest is cut and marked `[truncated]` |
+| Files | `read_file_from_boxd` and `write_file_to_boxd` handle text (UTF-8); there is no size limit on writes |
+| Machines per plugin | one; use `fork()` or a second `BoxdPlugin` for more |
+| Machine size | 1, 2, 4 or 8 vCPUs with 4 GB of memory each, up to your organization's quota |
+| First tool call | creates the machine and waits up to 180 seconds for it to accept commands (usually about a second) |
+| New checkpoint | the tool waits up to 120 seconds for it to become restorable, then returns it with `"status": "pending"` |
+| Machine names | unique per region; a name that exists in another region is an error, not a second machine |
+
+## How it works
+
+- `BoxdPlugin` holds one boxd client and one machine. Nothing touches the network until the first tool call, which reuses the machine called `machine_name` if it exists (starting it if it was stopped) or creates it.
+- Commands go through the boxd SDK's `machines.exec`, and file tools through `machines.fs`, which writes as the machine's user, creates missing parent directories and replaces files atomically.
+- Tools run in a worker thread, so a long command doesn't block the event loop. A lock makes sure two parallel tool calls don't create two machines.
+- A machine that is asleep wakes on the next command. Checkpoints, forks and snapshots are boxd's own: they capture disk, memory and running processes.
+- When the runner shuts down, ADK calls the plugin's `close()`, which deletes an unnamed machine and closes the client. A named machine stays.
 
 ## Examples
 
