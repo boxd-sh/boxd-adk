@@ -1,3 +1,5 @@
+![boxd: composable computers for Google ADK agents](assets/banner.png)
+
 # boxd-adk
 
 Google [ADK](https://adk.dev/) integration for [boxd](https://boxd.sh/?ref=boxd-adk): give your agent a full Linux machine with a persistent disk, checkpoints, snapshots and live forks.
